@@ -35,7 +35,7 @@ const AdminPanel = () => {
       const slotsArray = formData.slots.split(',').map(s => s.trim());
 
       await axios.post(
-        'http://localhost:5000/api/turfs', 
+        'https://turf-booking-api-nnrq.onrender.com/api/turfs', 
         { ...formData, slots: slotsArray },
         { headers: { 'x-auth-token': token } }
       );

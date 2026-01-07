@@ -19,7 +19,7 @@ const Register = () => {
     e.preventDefault();
     try {
       // Send data to backend
-      const res = await axios.post('http://localhost:5000/api/auth/register', formData);
+      const res = await axios.post('https://turf-booking-api-nnrq.onrender.com/api/auth/register', formData);
       alert('Registration Successful! Please Login.');
       navigate('/login'); 
     } catch (err) {

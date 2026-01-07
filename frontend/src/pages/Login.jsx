@@ -13,7 +13,7 @@ const Login = () => {
 const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/login', formData);
+      const res = await axios.post('https://turf-booking-api-nnrq.onrender.com/api/auth/login', formData);
       
       // SAVE TOKEN AND ROLE
       localStorage.setItem('token', res.data.token);

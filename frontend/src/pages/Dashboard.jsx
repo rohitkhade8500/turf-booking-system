@@ -17,7 +17,7 @@ const Dashboard = () => {
       }
 
       try {
-        const res = await axios.get('http://localhost:5000/api/bookings/my-bookings', {
+        const res = await axios.get('https://turf-booking-api-nnrq.onrender.com/api/bookings/my-bookings', {
           headers: { 'x-auth-token': token }
         });
         setBookings(res.data);

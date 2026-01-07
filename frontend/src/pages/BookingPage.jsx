@@ -14,7 +14,7 @@ const BookingPage = () => {
     // Fetch Turf Details to show name and slots
     const fetchTurf = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/turfs/${id}`);
+        const res = await axios.get(`https://turf-booking-api-nnrq.onrender.com/api/turfs/${id}`);
         setTurf(res.data);
       } catch (err) {
         console.error("Error fetching turf:", err);
@@ -33,7 +33,7 @@ const BookingPage = () => {
 
     try {
       await axios.post(
-        'http://localhost:5000/api/bookings',
+        'https://turf-booking-api-nnrq.onrender.com/api/bookings',
         {
           turfId: id,
           date: date,
