@@ -1,25 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api'; // We use the API config we created earlier
 import { useNavigate } from 'react-router-dom';
 
 const AdminPanel = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    name: '',
-    sportType: '',
-    location: '',
-    pricePerHour: '',
-    slots: '' // We will take comma separated string (e.g. "9-10, 10-11")
+    name: '', sportType: '', location: '', pricePerHour: '', slots: ''
   });
+  const [allBookings, setAllBookings] = useState([]); // Store bookings here
 
-  // Security Check: Kick out non-admins
+  // 1. Fetch Bookings on Load
   useEffect(() => {
     const role = localStorage.getItem('role');
     if (role !== 'admin') {
-      alert("Access Denied: Admins Only");
+      alert("Access Denied");
       navigate('/');
+    } else {
+      fetchAllBookings();
     }
   }, [navigate]);
+
+  const fetchAllBookings = async () => {
+    try {
+      const res = await api.get('/bookings/all');
+      setAllBookings(res.data);
+    } catch (err) {
+      console.error("Error fetching bookings:", err);
+    }
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -28,73 +36,83 @@ const AdminPanel = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
-      
-      // Convert comma-separated string to array for backend
-      // Input: "09:00-10:00, 10:00-11:00" -> Output: ["09:00-10:00", "10:00-11:00"]
       const slotsArray = formData.slots.split(',').map(s => s.trim());
-
-      await axios.post(
-        'https://turf-booking-api-nnrq.onrender.com/api/turfs', 
-        { ...formData, slots: slotsArray },
-        { headers: { 'x-auth-token': token } }
-      );
-
+      await api.post('/turfs', { ...formData, slots: slotsArray });
       alert('Turf Added Successfully!');
-      setFormData({ name: '', sportType: '', location: '', pricePerHour: '', slots: '' }); // Reset form
+      setFormData({ name: '', sportType: '', location: '', pricePerHour: '', slots: '' });
     } catch (err) {
-      console.error(err);
       alert('Failed to add turf');
     }
   };
 
   return (
     <div className="container mt-5">
-      <h2 className="text-center mb-4">Admin Panel: Add Turf</h2>
-      <div className="card shadow p-4">
-        <form onSubmit={handleSubmit}>
-          <div className="mb-3">
-            <label className="form-label">Turf Name</label>
-            <input type="text" name="name" value={formData.name} onChange={handleChange} className="form-control" required />
+      <h2 className="text-center mb-4">⚙️ Admin Dashboard</h2>
+      
+      <div className="row">
+        {/* LEFT COLUMN: Add Turf Form */}
+        <div className="col-md-4 mb-4">
+          <div className="card shadow p-3">
+            <h4 className="mb-3">Add New Turf</h4>
+            <form onSubmit={handleSubmit}>
+              <div className="mb-2">
+                <input type="text" name="name" placeholder="Turf Name" value={formData.name} onChange={handleChange} className="form-control" required />
+              </div>
+              <div className="mb-2">
+                <select name="sportType" value={formData.sportType} onChange={handleChange} className="form-select" required>
+                  <option value="">Select Sport</option>
+                  <option value="Football">Football</option>
+                  <option value="Cricket">Cricket</option>
+                  <option value="Badminton">Badminton</option>
+                </select>
+              </div>
+              <div className="mb-2">
+                <input type="number" name="pricePerHour" placeholder="Price (₹)" value={formData.pricePerHour} onChange={handleChange} className="form-control" required />
+              </div>
+              <div className="mb-2">
+                <input type="text" name="location" placeholder="Location" value={formData.location} onChange={handleChange} className="form-control" required />
+              </div>
+              <div className="mb-3">
+                <input type="text" name="slots" placeholder="Slots (e.g. 9-10, 10-11)" value={formData.slots} onChange={handleChange} className="form-control" required />
+              </div>
+              <button type="submit" className="btn btn-danger w-100">Add Turf</button>
+            </form>
           </div>
-          
-          <div className="row">
-            <div className="col-md-6 mb-3">
-              <label className="form-label">Sport Type</label>
-              <select name="sportType" value={formData.sportType} onChange={handleChange} className="form-select" required>
-                <option value="">Select Sport</option>
-                <option value="Football">Football</option>
-                <option value="Cricket">Cricket</option>
-                <option value="Badminton">Badminton</option>
-              </select>
+        </div>
+
+        {/* RIGHT COLUMN: View All Bookings */}
+        <div className="col-md-8">
+          <div className="card shadow p-3">
+            <h4 className="mb-3">📋 All User Bookings ({allBookings.length})</h4>
+            <div className="table-responsive" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+              <table className="table table-striped table-hover">
+                <thead className="table-dark">
+                  <tr>
+                    <th>User</th>
+                    <th>Turf</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allBookings.map((b) => (
+                    <tr key={b._id}>
+                      <td>
+                        <strong>{b.user?.name || 'Unknown'}</strong><br/>
+                        <small className="text-muted">{b.user?.email}</small>
+                      </td>
+                      <td>{b.turf?.name || 'Deleted Turf'}</td>
+                      <td>{b.date}</td>
+                      <td><span className="badge bg-info text-dark">{b.slot}</span></td>
+                      <td>₹{b.totalPrice}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <div className="col-md-6 mb-3">
-              <label className="form-label">Price Per Hour (₹)</label>
-              <input type="number" name="pricePerHour" value={formData.pricePerHour} onChange={handleChange} className="form-control" required />
-            </div>
           </div>
-
-          <div className="mb-3">
-            <label className="form-label">Location</label>
-            <input type="text" name="location" value={formData.location} onChange={handleChange} className="form-control" required />
-          </div>
-
-          <div className="mb-3">
-            <label className="form-label">Available Slots (Comma Separated)</label>
-            <input 
-              type="text" 
-              name="slots" 
-              value={formData.slots} 
-              onChange={handleChange} 
-              className="form-control" 
-              placeholder="e.g. 09:00-10:00, 10:00-11:00, 16:00-17:00" 
-              required 
-            />
-            <small className="text-muted">Enter time slots separated by commas</small>
-          </div>
-
-          <button type="submit" className="btn btn-danger w-100">Add Turf</button>
-        </form>
+        </div>
       </div>
     </div>
   );

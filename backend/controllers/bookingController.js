@@ -55,3 +55,16 @@ exports.getMyBookings = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
+
+// Get ALL bookings (Admin only)
+exports.getAllBookings = async (req, res) => {
+    try {
+        // .populate() replaces the ID with actual data (User name, Turf name)
+        const bookings = await Booking.find()
+            .populate('user', 'name email') 
+            .populate('turf', 'name'); 
+        res.json(bookings);
+    } catch (err) {
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
