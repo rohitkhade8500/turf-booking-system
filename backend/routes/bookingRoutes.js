@@ -1,13 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { bookTurf, getMyBookings } = require('../controllers/bookingController');
-const auth = require('../middleware/authMiddleware'); // Users must be logged in to book
+const auth = require('../middleware/authMiddleware');
+// ⚠️ NOTICE: getAllBookings is added here now!
+const { createBooking, getUserBookings, getAllBookings } = require('../controllers/bookingController'); 
 
-// POST /api/bookings - Create a new booking
-router.post('/', auth, bookTurf);
-
-// GET /api/bookings/my-bookings - View booking history [cite: 26]
-router.get('/my-bookings', auth, getMyBookings);
-router.get('/all', auth, getAllBookings);
+router.post('/', auth, createBooking);
+router.get('/my-bookings', auth, getUserBookings);
+router.get('/all', auth, getAllBookings); // This line will work now
 
 module.exports = router;
