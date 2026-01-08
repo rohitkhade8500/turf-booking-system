@@ -11,6 +11,7 @@ const BookingPage = () => {
   const [selectedSlot, setSelectedSlot] = useState(null);
 
   useEffect(() => {
+    // Fetch Turf Details
     const fetchTurf = async () => {
       try {
         const res = await api.get(`/turfs/${id}`);
@@ -30,21 +31,25 @@ const BookingPage = () => {
       return;
     }
 
-    // 💰 FIX: INTELLIGENT PRICE FINDER
-    // If 'pricePerHour' is missing, try 'price', otherwise default to 500
-    const finalPrice = turf.pricePerHour || turf.price || 500;
+    // 🎯 USE REAL PRICE FROM DATABASE
+    // We strictly use 'pricePerHour' as you confirmed it exists in Atlas.
+    const realPrice = turf.pricePerHour;
 
-    console.log(`Booking Turf: ${turf.name} | Price Sending: ${finalPrice}`);
+    if (!realPrice) {
+      alert("Error: This turf does not have a price set. Please contact Admin.");
+      return;
+    }
 
     try {
+      // Send the booking to the backend
       await api.post('/bookings', {
         turfId: id,
         date: date,
         slot: selectedSlot,
-        price: Number(finalPrice) // Ensure it's a number
+        price: realPrice // Sending 1500 (or whatever is in DB)
       });
       
-      alert(`✅ Booking Confirmed for ₹${finalPrice}!`);
+      alert(`✅ Booking Confirmed! Amount: ₹${realPrice}`);
       navigate('/dashboard');
     } catch (err) {
       const errorMsg = err.response?.data?.message || "Booking Failed";
@@ -58,13 +63,17 @@ const BookingPage = () => {
     <div className="container mt-5">
       <div className="card shadow p-4">
         <h2 className="mb-3">{turf.name}</h2>
-        {/* Display the price we found */}
-        <h5 className="text-muted">{turf.location} - <span className="text-success fw-bold">₹{turf.pricePerHour || turf.price || 500}/hr</span></h5>
+        <h5 className="text-muted">{turf.location} - <span className="text-success fw-bold">₹{turf.pricePerHour}/hr</span></h5>
         <hr />
 
         <div className="mb-4">
             <label className="form-label fw-bold">Select Date:</label>
-            <input type="date" className="form-control w-50" onChange={(e) => setDate(e.target.value)} min={new Date().toISOString().split("T")[0]} />
+            <input 
+                type="date" 
+                className="form-control w-50" 
+                onChange={(e) => setDate(e.target.value)} 
+                min={new Date().toISOString().split("T")[0]} 
+            />
         </div>
 
         <div className="mb-4">
@@ -82,8 +91,12 @@ const BookingPage = () => {
             </div>
         </div>
 
-        <button className="btn btn-dark w-100" onClick={handleBook} disabled={!date || !selectedSlot}>
-            Confirm Booking (₹{turf.pricePerHour || turf.price || 500})
+        <button 
+            className="btn btn-dark w-100" 
+            onClick={handleBook} 
+            disabled={!date || !selectedSlot}
+        >
+            Confirm Booking (₹{turf.pricePerHour})
         </button>
       </div>
     </div>
