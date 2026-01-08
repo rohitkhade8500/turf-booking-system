@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../api'; // We use the API config we created earlier
+import api from '../api'; // ✅ Uses the cleaner API config
 import { useNavigate } from 'react-router-dom';
 
 const AdminPanel = () => {

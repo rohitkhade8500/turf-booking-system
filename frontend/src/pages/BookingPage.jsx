@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api'; // ✅ Uses the cleaner API config
 
 const BookingPage = () => {
   const { id } = useParams(); // Get turf ID from URL
@@ -11,10 +11,10 @@ const BookingPage = () => {
   const [selectedSlot, setSelectedSlot] = useState(null);
 
   useEffect(() => {
-    // Fetch Turf Details to show name and slots
+    // Fetch Turf Details
     const fetchTurf = async () => {
       try {
-        const res = await axios.get(`https://turf-booking-api-nnrq.onrender.com/api/turfs/${id}`);
+        const res = await api.get(`/turfs/${id}`);
         setTurf(res.data);
       } catch (err) {
         console.error("Error fetching turf:", err);
@@ -31,21 +31,28 @@ const BookingPage = () => {
       return;
     }
 
+    if (!date || !selectedSlot) {
+      alert("Please select a Date and a Time Slot");
+      return;
+    }
+
     try {
-      await axios.post(
-        'https://turf-booking-api-nnrq.onrender.com/api/bookings',
-        {
-          turfId: id,
-          date: date,
-          slot: selectedSlot
-        },
-        { headers: { 'x-auth-token': token } } // Send the token!
-      );
-      alert('Booking Confirmed! 🎉');
-      navigate('/');
+      // ✅ FIX: Added 'price' here because Backend requires it
+      const bookingPayload = {
+        turfId: id,
+        date: date,
+        slot: selectedSlot,
+        price: turf.pricePerHour // <--- This was missing before!
+      };
+
+      await api.post('/bookings', bookingPayload);
+      
+      alert('✅ Booking Confirmed! 🎉');
+      navigate('/dashboard');
     } catch (err) {
-      // Show the error message from backend (e.g., "Slot already booked")
-      alert(err.response?.data?.message || 'Booking Failed');
+      // Show the specific error message from backend
+      const errorMsg = err.response?.data?.message || 'Booking Failed';
+      alert(`❌ Error: ${errorMsg}`);
     }
   };
 
@@ -55,7 +62,7 @@ const BookingPage = () => {
     <div className="container mt-5">
       <div className="card shadow p-4">
         <h2 className="mb-3">{turf.name}</h2>
-        <h5 className="text-muted">{turf.location} - ₹{turf.pricePerHour}/hr</h5>
+        <h5 className="text-muted">{turf.location} - <span className="text-success fw-bold">₹{turf.pricePerHour}/hr</span></h5>
         <hr />
 
         <div className="mb-4">
@@ -64,6 +71,7 @@ const BookingPage = () => {
                 type="date" 
                 className="form-control w-50" 
                 onChange={(e) => setDate(e.target.value)}
+                min={new Date().toISOString().split("T")[0]}
             />
         </div>
 
@@ -72,7 +80,7 @@ const BookingPage = () => {
             <div className="d-flex flex-wrap gap-2">
                 {turf.slots.map((slot, index) => (
                     <button 
-                        key={index}
+                        key={index} 
                         className={`btn ${selectedSlot === slot ? 'btn-success' : 'btn-outline-primary'}`}
                         onClick={() => setSelectedSlot(slot)}
                     >
