@@ -11,7 +11,7 @@ const BookingPage = () => {
   const [selectedSlot, setSelectedSlot] = useState(null);
 
   useEffect(() => {
-    // 1. This fetches the SPECIFIC turf data (including its unique price)
+    // Fetch Turf Details
     const fetchTurf = async () => {
       try {
         const res = await axios.get(`https://turf-booking-api-nnrq.onrender.com/api/turfs/${id}`);
@@ -31,6 +31,16 @@ const BookingPage = () => {
       return;
     }
 
+    // 🛡️ FIND THE PRICE (Supports both naming conventions)
+    const priceToSend = turf.pricePerHour || turf.price || 0;
+
+    console.log("Sending Booking Data:", {
+        turfId: id,
+        date: date,
+        slot: selectedSlot,
+        price: priceToSend
+    });
+
     try {
       await axios.post(
         'https://turf-booking-api-nnrq.onrender.com/api/bookings',
@@ -38,16 +48,19 @@ const BookingPage = () => {
           turfId: id,
           date: date,
           slot: selectedSlot,
-          // 👇 MAGIC LINE: This sends the correct price for THIS specific turf
-          price: turf.pricePerHour 
+          price: priceToSend // ✅ CRITICAL FIX: Sending the price!
         },
-        { headers: { 'x-auth-token': token } }
+        { headers: { 'x-auth-token': token } } // Sending token for auth
       );
+      
       alert('Booking Confirmed! 🎉');
       navigate('/');
+      
     } catch (err) {
-      console.error(err);
-      alert(err.response?.data?.message || 'Booking Failed');
+      console.error("Booking Error:", err);
+      // Show the specific error message from the backend
+      const msg = err.response?.data?.message || 'Booking Failed';
+      alert(`❌ Error: ${msg}`);
     }
   };
 
@@ -57,8 +70,7 @@ const BookingPage = () => {
     <div className="container mt-5">
       <div className="card shadow p-4">
         <h2 className="mb-3">{turf.name}</h2>
-        {/* This displays the price to the user */}
-        <h5 className="text-muted">{turf.location} - ₹{turf.pricePerHour}/hr</h5>
+        <h5 className="text-muted">{turf.location} - ₹{turf.pricePerHour || turf.price}/hr</h5>
         <hr />
 
         <div className="mb-4">
@@ -73,7 +85,7 @@ const BookingPage = () => {
         <div className="mb-4">
             <label className="form-label fw-bold">Select Time Slot:</label>
             <div className="d-flex flex-wrap gap-2">
-                {turf.slots.map((slot, index) => (
+                {turf.slots && turf.slots.map((slot, index) => (
                     <button 
                         key={index} 
                         className={`btn ${selectedSlot === slot ? 'btn-success' : 'btn-outline-primary'}`}
