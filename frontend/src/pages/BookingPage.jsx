@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import api from '../api';
+import axios from 'axios';
 
 const BookingPage = () => {
-  const { id } = useParams();
+  const { id } = useParams(); // Get turf ID from URL
   const navigate = useNavigate();
   
   const [turf, setTurf] = useState(null);
@@ -11,10 +11,10 @@ const BookingPage = () => {
   const [selectedSlot, setSelectedSlot] = useState(null);
 
   useEffect(() => {
-    // Fetch Turf Details
+    // Fetch Turf Details to show name and slots
     const fetchTurf = async () => {
       try {
-        const res = await api.get(`/turfs/${id}`);
+        const res = await axios.get(`https://turf-booking-api-nnrq.onrender.com/api/turfs/${id}`);
         setTurf(res.data);
       } catch (err) {
         console.error("Error fetching turf:", err);
@@ -26,34 +26,27 @@ const BookingPage = () => {
   const handleBook = async () => {
     const token = localStorage.getItem('token');
     if (!token) {
-      alert("Please login first!");
+      alert("Please login to book a turf!");
       navigate('/login');
       return;
     }
 
-    // 🎯 USE REAL PRICE FROM DATABASE
-    // We strictly use 'pricePerHour' as you confirmed it exists in Atlas.
-    const realPrice = turf.pricePerHour;
-
-    if (!realPrice) {
-      alert("Error: This turf does not have a price set. Please contact Admin.");
-      return;
-    }
-
     try {
-      // Send the booking to the backend
-      await api.post('/bookings', {
-        turfId: id,
-        date: date,
-        slot: selectedSlot,
-        price: realPrice // Sending 1500 (or whatever is in DB)
-      });
-      
-      alert(`✅ Booking Confirmed! Amount: ₹${realPrice}`);
-      navigate('/dashboard');
+      await axios.post(
+        'https://turf-booking-api-nnrq.onrender.com/api/bookings',
+        {
+          turfId: id,
+          date: date,
+          slot: selectedSlot,
+          price: turf.pricePerHour // ⚠️ FIXED: Now sending the price!
+        },
+        { headers: { 'x-auth-token': token } } // Send the token!
+      );
+      alert('Booking Confirmed! 🎉');
+      navigate('/');
     } catch (err) {
-      const errorMsg = err.response?.data?.message || "Booking Failed";
-      alert(`❌ Error: ${errorMsg}`);
+      // Show the error message from backend
+      alert(err.response?.data?.message || 'Booking Failed');
     }
   };
 
@@ -63,7 +56,7 @@ const BookingPage = () => {
     <div className="container mt-5">
       <div className="card shadow p-4">
         <h2 className="mb-3">{turf.name}</h2>
-        <h5 className="text-muted">{turf.location} - <span className="text-success fw-bold">₹{turf.pricePerHour}/hr</span></h5>
+        <h5 className="text-muted">{turf.location} - ₹{turf.pricePerHour}/hr</h5>
         <hr />
 
         <div className="mb-4">
@@ -71,15 +64,14 @@ const BookingPage = () => {
             <input 
                 type="date" 
                 className="form-control w-50" 
-                onChange={(e) => setDate(e.target.value)} 
-                min={new Date().toISOString().split("T")[0]} 
+                onChange={(e) => setDate(e.target.value)}
             />
         </div>
 
         <div className="mb-4">
             <label className="form-label fw-bold">Select Time Slot:</label>
             <div className="d-flex flex-wrap gap-2">
-                {turf.slots && turf.slots.map((slot, index) => (
+                {turf.slots.map((slot, index) => (
                     <button 
                         key={index} 
                         className={`btn ${selectedSlot === slot ? 'btn-success' : 'btn-outline-primary'}`}
@@ -92,11 +84,11 @@ const BookingPage = () => {
         </div>
 
         <button 
-            className="btn btn-dark w-100" 
-            onClick={handleBook} 
+            className="btn btn-dark btn-lg w-100" 
+            onClick={handleBook}
             disabled={!date || !selectedSlot}
         >
-            Confirm Booking (₹{turf.pricePerHour})
+            Confirm Booking
         </button>
       </div>
     </div>

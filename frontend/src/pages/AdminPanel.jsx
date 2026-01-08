@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../api'; // ✅ Uses the cleaner API config
+import api from '../api'; 
 import { useNavigate } from 'react-router-dom';
 
 const AdminPanel = () => {
@@ -7,7 +7,7 @@ const AdminPanel = () => {
   const [formData, setFormData] = useState({
     name: '', sportType: '', location: '', pricePerHour: '', slots: ''
   });
-  const [allBookings, setAllBookings] = useState([]); // Store bookings here
+  const [allBookings, setAllBookings] = useState([]);
 
   // 1. Fetch Bookings on Load
   useEffect(() => {
