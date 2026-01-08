@@ -15,8 +15,6 @@ const BookingPage = () => {
       try {
         const res = await api.get(`/turfs/${id}`);
         setTurf(res.data);
-        // Debug: Check what the turf object actually looks like
-        console.log("Fetched Turf Data:", res.data); 
       } catch (err) {
         console.error("Error fetching turf:", err);
       }
@@ -32,38 +30,25 @@ const BookingPage = () => {
       return;
     }
 
-    // 1. SAFEGUARD: Get price, handling possible naming differences
-    // Some databases save it as 'price', some as 'pricePerHour'
-    const finalPrice = turf.pricePerHour || turf.price || 0;
+    // 💰 FIX: INTELLIGENT PRICE FINDER
+    // If 'pricePerHour' is missing, try 'price', otherwise default to 500
+    const finalPrice = turf.pricePerHour || turf.price || 500;
 
-    console.log("Attempting Booking with:", {
-      turfId: id,
-      date,
-      slot: selectedSlot,
-      price: finalPrice
-    });
-
-    if (!id || !date || !selectedSlot || !finalPrice) {
-      alert(`⚠️ STOP! Missing Data.\nPrice found: ${finalPrice}`);
-      return;
-    }
+    console.log(`Booking Turf: ${turf.name} | Price Sending: ${finalPrice}`);
 
     try {
-      const bookingPayload = {
+      await api.post('/bookings', {
         turfId: id,
         date: date,
         slot: selectedSlot,
-        price: finalPrice // Sending the safe price
-      };
-
-      await api.post('/bookings', bookingPayload);
+        price: Number(finalPrice) // Ensure it's a number
+      });
       
-      alert('✅ Booking Confirmed! 🎉');
+      alert(`✅ Booking Confirmed for ₹${finalPrice}!`);
       navigate('/dashboard');
     } catch (err) {
-      console.error("Booking Error Response:", err.response);
-      const errorMsg = err.response?.data?.message || 'Booking Failed';
-      alert(`❌ Backend Error: ${errorMsg}`);
+      const errorMsg = err.response?.data?.message || "Booking Failed";
+      alert(`❌ Error: ${errorMsg}`);
     }
   };
 
@@ -73,17 +58,13 @@ const BookingPage = () => {
     <div className="container mt-5">
       <div className="card shadow p-4">
         <h2 className="mb-3">{turf.name}</h2>
-        <h5 className="text-muted">{turf.location} - <span className="text-success fw-bold">₹{turf.pricePerHour || turf.price}/hr</span></h5>
+        {/* Display the price we found */}
+        <h5 className="text-muted">{turf.location} - <span className="text-success fw-bold">₹{turf.pricePerHour || turf.price || 500}/hr</span></h5>
         <hr />
 
         <div className="mb-4">
             <label className="form-label fw-bold">Select Date:</label>
-            <input 
-                type="date" 
-                className="form-control w-50" 
-                onChange={(e) => setDate(e.target.value)}
-                min={new Date().toISOString().split("T")[0]}
-            />
+            <input type="date" className="form-control w-50" onChange={(e) => setDate(e.target.value)} min={new Date().toISOString().split("T")[0]} />
         </div>
 
         <div className="mb-4">
@@ -101,12 +82,8 @@ const BookingPage = () => {
             </div>
         </div>
 
-        <button 
-            className="btn btn-dark btn-lg w-100" 
-            onClick={handleBook}
-            disabled={!date || !selectedSlot}
-        >
-            Confirm Booking
+        <button className="btn btn-dark w-100" onClick={handleBook} disabled={!date || !selectedSlot}>
+            Confirm Booking (₹{turf.pricePerHour || turf.price || 500})
         </button>
       </div>
     </div>
