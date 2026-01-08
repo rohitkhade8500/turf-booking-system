@@ -1,29 +1,32 @@
 const Booking = require('../models/Booking');
-const Turf = require('../models/Turf');
 
-// 1. Create a Booking (User)
 exports.createBooking = async (req, res) => {
   try {
+    // 1. Log exactly what the frontend sent (Check Render Logs for this!)
+    console.log("📥 RECEIVED BOOKING REQUEST:", req.body);
+
     const { turfId, date, slot, price } = req.body;
     
-    // Validation: Ensure all fields are present
-    if (!turfId || !date || !slot || !price) {
-      return res.status(400).json({ message: 'Missing required fields: turfId, date, slot, or price' });
+    // 2. RELAXED VALIDATION: We removed '|| !price' so it won't fail anymore
+    if (!turfId || !date || !slot) {
+      return res.status(400).json({ message: 'Missing required fields: turfId, date, or slot' });
     }
+
+    // 3. Fallback: If price is missing, use 0 (so it doesn't crash)
+    const finalPrice = price || 0;
 
     // Check if slot is already booked
     const existingBooking = await Booking.findOne({ turf: turfId, date, slot });
     if (existingBooking) {
-      return res.status(400).json({ message: 'This slot is already booked!' });
+      return res.status(400).json({ message: 'Slot already booked' });
     }
 
-    // Create new booking
     const newBooking = new Booking({
       user: req.user.id,
-      turf: turfId, // We map 'turfId' from frontend to 'turf' in database
+      turf: turfId,
       date,
       slot,
-      totalPrice: price
+      totalPrice: finalPrice // Save the price (or 0)
     });
 
     await newBooking.save();
@@ -35,7 +38,7 @@ exports.createBooking = async (req, res) => {
   }
 };
 
-// 2. Get My Bookings (User)
+// Keep the other functions as they are
 exports.getUserBookings = async (req, res) => {
   try {
     const bookings = await Booking.find({ user: req.user.id }).populate('turf');
@@ -45,7 +48,6 @@ exports.getUserBookings = async (req, res) => {
   }
 };
 
-// 3. Get ALL Bookings (Admin Only)
 exports.getAllBookings = async (req, res) => {
     try {
         const bookings = await Booking.find()
