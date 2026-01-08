@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import api from '../api'; // ✅ Uses the cleaner API config
+import api from '../api';
 
 const BookingPage = () => {
-  const { id } = useParams(); // Get turf ID from URL
+  const { id } = useParams();
   const navigate = useNavigate();
   
   const [turf, setTurf] = useState(null);
@@ -11,7 +11,6 @@ const BookingPage = () => {
   const [selectedSlot, setSelectedSlot] = useState(null);
 
   useEffect(() => {
-    // Fetch Turf Details
     const fetchTurf = async () => {
       try {
         const res = await api.get(`/turfs/${id}`);
@@ -26,23 +25,28 @@ const BookingPage = () => {
   const handleBook = async () => {
     const token = localStorage.getItem('token');
     if (!token) {
-      alert("Please login to book a turf!");
+      alert("Please login first!");
       navigate('/login');
       return;
     }
 
-    if (!date || !selectedSlot) {
-      alert("Please select a Date and a Time Slot");
-      return;
+    // 🕵️‍♂️ DEBUGGING: Check values before sending
+    console.log("Turf ID:", id);
+    console.log("Date:", date);
+    console.log("Slot:", selectedSlot);
+    console.log("Price:", turf?.pricePerHour);
+
+    if (!id || !date || !selectedSlot || !turf?.pricePerHour) {
+      alert(`⚠️ MISSING DATA:\nID: ${id}\nDate: ${date}\nSlot: ${selectedSlot}\nPrice: ${turf?.pricePerHour}`);
+      return; // Stop here if data is missing
     }
 
     try {
-      // ✅ FIX: Added 'price' here because Backend requires it
       const bookingPayload = {
         turfId: id,
         date: date,
         slot: selectedSlot,
-        price: turf.pricePerHour // <--- This was missing before!
+        price: turf.pricePerHour // Ensure this matches your database field name
       };
 
       await api.post('/bookings', bookingPayload);
@@ -50,7 +54,6 @@ const BookingPage = () => {
       alert('✅ Booking Confirmed! 🎉');
       navigate('/dashboard');
     } catch (err) {
-      // Show the specific error message from backend
       const errorMsg = err.response?.data?.message || 'Booking Failed';
       alert(`❌ Error: ${errorMsg}`);
     }
