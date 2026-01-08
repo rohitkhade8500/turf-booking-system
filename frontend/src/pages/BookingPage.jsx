@@ -11,7 +11,7 @@ const BookingPage = () => {
   const [selectedSlot, setSelectedSlot] = useState(null);
 
   useEffect(() => {
-    // Fetch Turf Details to show name and slots
+    // 1. This fetches the SPECIFIC turf data (including its unique price)
     const fetchTurf = async () => {
       try {
         const res = await axios.get(`https://turf-booking-api-nnrq.onrender.com/api/turfs/${id}`);
@@ -38,14 +38,15 @@ const BookingPage = () => {
           turfId: id,
           date: date,
           slot: selectedSlot,
-          price: turf.pricePerHour // ⚠️ FIXED: Now sending the price!
+          // 👇 MAGIC LINE: This sends the correct price for THIS specific turf
+          price: turf.pricePerHour 
         },
-        { headers: { 'x-auth-token': token } } // Send the token!
+        { headers: { 'x-auth-token': token } }
       );
       alert('Booking Confirmed! 🎉');
       navigate('/');
     } catch (err) {
-      // Show the error message from backend
+      console.error(err);
       alert(err.response?.data?.message || 'Booking Failed');
     }
   };
@@ -56,6 +57,7 @@ const BookingPage = () => {
     <div className="container mt-5">
       <div className="card shadow p-4">
         <h2 className="mb-3">{turf.name}</h2>
+        {/* This displays the price to the user */}
         <h5 className="text-muted">{turf.location} - ₹{turf.pricePerHour}/hr</h5>
         <hr />
 
